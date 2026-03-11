@@ -1,0 +1,8 @@
+services:
+  timesheet-parser:
+    build: .
+    ports:
+      - "8080:8000"
+    environment:
+      - API_KEY=${API_KEY:-changeme}
+    restart: unless-stopped
