@@ -58,11 +58,7 @@ async def parse_timesheets(
             parsed = parse_timesheet(str(tmp_path))
             avvas_id = parsed["avvas_id"] or upload_file.filename
 
-            results[avvas_id] = {
-                "metadata": parsed["metadata"],
-                "summary": parsed["summary"],
-                "daily_entries": parsed["daily_entries"],
-            }
+            results[avvas_id] = parsed["summary"]
         except Exception as e:
             errors.append({"file": upload_file.filename, "error": str(e)})
         finally:
