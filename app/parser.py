@@ -92,14 +92,38 @@ def parse_timesheet(file_path: str) -> dict:
                 summary_data[field_name] = float(val)
                 break
 
+    # Fall back to computing values from daily entries if summary section is missing/zero
+    def _compute_from_entries(field: str, entries: list) -> float | int:
+        if field == "total_hours_worked":
+            return sum(e["hours_worked"] for e in entries)
+        if field == "total_days_worked":
+            return sum(1 for e in entries if e["hours_worked"] > 0)
+        if field == "total_billable_days":
+            return sum(1 for e in entries if e["hours_worked"] > 0)
+        if field == "total_client_holidays":
+            return sum(1 for e in entries if "holiday" in e["nature_of_shift"].lower())
+        if field == "total_el_taken":
+            return sum(1 for e in entries if e["nature_of_shift"].strip().upper() == "EL")
+        if field == "total_sl_taken":
+            return sum(1 for e in entries if e["nature_of_shift"].strip().upper() == "SL")
+        if field == "total_cl_taken":
+            return sum(1 for e in entries if e["nature_of_shift"].strip().upper() == "CL")
+        return 0
+
+    def _get(field: str, is_float: bool = False):
+        val = summary_data.get(field, 0)
+        if val == 0:
+            val = _compute_from_entries(field, daily_entries)
+        return float(val) if is_float else int(val)
+
     summary = {
-        "Total Number of Hours worked": summary_data.get("total_hours_worked", 0),
-        "Total Client Holidays": int(summary_data.get("total_client_holidays", 0)),
-        "Total Number of Days worked": int(summary_data.get("total_days_worked", 0)),
-        "Total billable days": int(summary_data.get("total_billable_days", 0)),
-        "Total EL taken": int(summary_data.get("total_el_taken", 0)),
-        "Total SL taken": int(summary_data.get("total_sl_taken", 0)),
-        "Total CL taken": int(summary_data.get("total_cl_taken", 0)),
+        "Total Number of Hours worked": _get("total_hours_worked", is_float=True),
+        "Total Client Holidays": _get("total_client_holidays"),
+        "Total Number of Days worked": _get("total_days_worked"),
+        "Total billable days": _get("total_billable_days"),
+        "Total EL taken": _get("total_el_taken"),
+        "Total SL taken": _get("total_sl_taken"),
+        "Total CL taken": _get("total_cl_taken"),
     }
 
     return {
